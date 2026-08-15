@@ -17,6 +17,19 @@ su pantalla con consentimiento explícito — pensada para ser simple, rápida y
 - Nada empieza a compartirse sin que la persona dueña de la pantalla **acepte explícitamente**
   una ventana de consentimiento.
 
+## Cómo usarla con tu amigo
+
+1. Cada uno instala `Remoto_0.1.0_x64-setup.exe` (no hace falta ser administrador). Windows va
+   a mostrar una advertencia de SmartScreen la primera vez por no estar firmado — "Más
+   información → Ejecutar de todos modos".
+2. Quien va a **compartir su pantalla** abre la app y toca **"Compartir mi pantalla"** — le
+   aparece un código de 6 caracteres.
+3. El otro toca **"Conectarme a un amigo"**, pone su nombre y ese código.
+4. A quien comparte le aparece un cartel pidiendo aceptar o rechazar. Al aceptar, Windows pide
+   elegir qué pantalla compartir — conviene elegir **"Pantalla completa"**.
+5. Listo: video en vivo de un lado, control de mouse/teclado desde el otro. Cualquiera puede
+   cortar la sesión en el momento que quiera.
+
 ## Estructura del proyecto
 
 ```
@@ -40,10 +53,19 @@ Ver `render.yaml` en la raíz — despliegue automatizado por API documentado en
 se conecte la cuenta de Render (requiere un API key generado una única vez desde el dashboard,
 paso que no se puede automatizar por completo).
 
-## App de escritorio
+## App de escritorio — desarrollo local
 
-En construcción — requiere Rust + MSVC Build Tools instalados en la máquina de desarrollo
-(no en la del usuario final, que solo instala el `.exe`/instalador ya compilado).
+Requiere Rust + MSVC Build Tools instalados en la máquina de desarrollo (no en la del usuario
+final, que solo instala el instalador ya compilado).
+
+```bash
+cd app
+npm install
+npx tauri dev       # modo desarrollo, recarga en caliente
+npx tauri build      # genera el instalador final en src-tauri/target/release/bundle/nsis
+```
+
+Instalador final: **~1.1 MB** · ejecutable: **~3.1 MB** · ~30 MB de RAM en uso.
 
 ## Limitaciones conocidas (v1)
 
