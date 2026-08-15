@@ -4,6 +4,7 @@ import { createSignaling } from "./signaling.js";
 import { createPeerConnection } from "./webrtc.js";
 import { attachInputCapture } from "./input-capture.js";
 import { applyRemoteInput } from "./input-apply.js";
+import { showToast } from "./toast.js";
 
 const SIGNAL_URL = "wss://remoto-signal.onrender.com";
 
@@ -21,14 +22,25 @@ function showView(name) {
   views[name].classList.add("active");
 }
 
+function setBusy(button, busy) {
+  button.disabled = busy;
+}
+
+const CONNECTION_STATE_MESSAGES = {
+  failed: "No se pudo establecer conexión directa. Puede ser un firewall o una red muy restrictiva de alguno de los dos lados.",
+  disconnected: "Se perdió la conexión con tu amigo.",
+};
+
 // ---------- estado de la sesión activa ----------
 let signaling = null;
 let pc = null;
 let dataChannel = null;
 let remoteSize = { w: 1920, h: 1080 };
 let detachInput = null;
+let sessionEnded = false; // evita procesar eventos tardíos después de cortar/resetear
 
 function resetState() {
+  sessionEnded = true;
   detachInput?.();
   detachInput = null;
   dataChannel?.close();
@@ -42,22 +54,40 @@ function resetState() {
 }
 
 // ================= HOST: compartir mi pantalla =================
-document.getElementById("btn-host").addEventListener("click", startHosting);
-document.getElementById("btn-host-cancel").addEventListener("click", resetState);
+const btnHost = document.getElementById("btn-host");
+btnHost.addEventListener("click", startHosting);
+document.getElementById("btn-host-cancel").addEventListener("click", () => {
+  signaling?.close();
+  resetState();
+});
 document.getElementById("btn-host-stop").addEventListener("click", () => {
   signaling?.send({ type: "end-session" });
   resetState();
 });
+document.getElementById("btn-copy-code").addEventListener("click", async () => {
+  const code = document.getElementById("host-code").textContent;
+  try {
+    await navigator.clipboard.writeText(code);
+    showToast("Código copiado", { type: "success", duration: 2000 });
+  } catch {
+    showToast("No se pudo copiar automáticamente — seleccionalo a mano.", { duration: 3000 });
+  }
+});
 
 async function startHosting() {
+  sessionEnded = false;
+  setBusy(btnHost, true);
   signaling = createSignaling(SIGNAL_URL);
+
   try {
     await signaling.ready;
   } catch {
-    alert("No se pudo conectar al servidor. Revisá tu conexión a internet.");
+    showToast("No se pudo conectar al servidor. Puede tardar unos segundos la primera vez si estaba dormido — probá de nuevo.");
     signaling = null;
+    setBusy(btnHost, false);
     return;
   }
+  setBusy(btnHost, false);
 
   showView("hostWaiting");
   document.getElementById("host-code").textContent = "------";
@@ -80,12 +110,21 @@ async function startHosting() {
   });
 
   signaling.on("error", (msg) => {
-    alert("Error del servidor: " + msg.reason);
+    const messages = { expired: "El código expiró sin que nadie se conectara." };
+    showToast(messages[msg.reason] || `Error del servidor (${msg.reason}).`);
     resetState();
   });
 
   signaling.on("peer-left", () => {
-    if (views.hostConnected.classList.contains("active")) alert("Tu amigo se desconectó.");
+    if (views.hostConnected.classList.contains("active")) {
+      showToast("Tu amigo se desconectó.", { type: "info" });
+    }
+    resetState();
+  });
+
+  signaling.onUnexpectedClose(() => {
+    if (sessionEnded) return;
+    showToast("Se perdió la conexión con el servidor.");
     resetState();
   });
 }
@@ -94,8 +133,12 @@ async function beginHostWebRTC(peerName) {
   let stream;
   try {
     stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-  } catch {
-    alert("Cancelaste la selección de pantalla — sin eso no se puede compartir nada.");
+  } catch (err) {
+    if (err.name === "NotAllowedError") {
+      showToast("Cancelaste la selección de pantalla — sin eso no se puede compartir nada.");
+    } else {
+      showToast("No se pudo iniciar la captura de pantalla: " + err.message);
+    }
     signaling.send({ type: "end-session" });
     resetState();
     return;
@@ -108,33 +151,55 @@ async function beginHostWebRTC(peerName) {
   pc = createPeerConnection({
     onIceCandidate: (candidate) => signaling.send({ type: "ice-candidate", candidate }),
     onConnectionStateChange: (state) => {
+      if (sessionEnded) return;
       if (state === "connected") {
         document.getElementById("host-connected-text").textContent = `Compartiendo tu pantalla con ${peerName}`;
         showView("hostConnected");
       }
-      if (state === "failed" || state === "disconnected") resetState();
+      if (CONNECTION_STATE_MESSAGES[state]) {
+        showToast(CONNECTION_STATE_MESSAGES[state]);
+        resetState();
+      }
     },
   });
 
   stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
   dataChannel = pc.createDataChannel("input");
-  dataChannel.addEventListener("message", (e) => applyRemoteInput(JSON.parse(e.data)));
+  dataChannel.addEventListener("message", (e) => {
+    try {
+      applyRemoteInput(JSON.parse(e.data));
+    } catch {
+      /* mensaje de input corrupto: se ignora, no vale la pena cortar la sesión por esto */
+    }
+  });
 
   signaling.on("answer", async (msg) => {
-    await pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
+    try {
+      await pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
+    } catch {
+      showToast("No se pudo completar la conexión con tu amigo.");
+      resetState();
+    }
   });
   signaling.on("ice-candidate", (msg) => {
     pc.addIceCandidate(msg.candidate).catch(() => {});
   });
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  signaling.send({ type: "offer", sdp: offer.sdp });
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    signaling.send({ type: "offer", sdp: offer.sdp });
+  } catch {
+    showToast("No se pudo iniciar la conexión de video.");
+    resetState();
+    return;
+  }
 
   // Si el usuario corta la compartición desde el picker nativo de Windows en vez de
   // usar nuestro botón, terminamos la sesión igual.
   track.addEventListener("ended", () => {
+    if (sessionEnded) return;
     signaling.send({ type: "end-session" });
     resetState();
   });
@@ -142,7 +207,10 @@ async function beginHostWebRTC(peerName) {
 
 // ================= GUEST: conectarme a un amigo =================
 document.getElementById("btn-join").addEventListener("click", () => showView("joinForm"));
-document.getElementById("btn-join-cancel").addEventListener("click", resetState);
+document.getElementById("btn-join-cancel").addEventListener("click", () => {
+  signaling?.close();
+  resetState();
+});
 document.getElementById("btn-join-cancel-2").addEventListener("click", () => {
   signaling?.send({ type: "end-session" });
   resetState();
@@ -151,7 +219,12 @@ document.getElementById("btn-join-stop").addEventListener("click", () => {
   signaling?.send({ type: "end-session" });
   resetState();
 });
-document.getElementById("btn-join-submit").addEventListener("click", startJoining);
+
+const btnJoinSubmit = document.getElementById("btn-join-submit");
+btnJoinSubmit.addEventListener("click", startJoining);
+document.getElementById("join-code").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") startJoining();
+});
 
 async function startJoining() {
   const name = document.getElementById("join-name").value.trim() || "Alguien";
@@ -164,14 +237,19 @@ async function startJoining() {
     return;
   }
 
+  sessionEnded = false;
+  setBusy(btnJoinSubmit, true);
   signaling = createSignaling(SIGNAL_URL);
+
   try {
     await signaling.ready;
   } catch {
-    errorEl.textContent = "No se pudo conectar al servidor.";
+    errorEl.textContent = "No se pudo conectar al servidor. Puede tardar unos segundos la primera vez — probá de nuevo.";
     signaling = null;
+    setBusy(btnJoinSubmit, false);
     return;
   }
+  setBusy(btnJoinSubmit, false);
 
   signaling.send({ type: "join-room", code, displayName: name });
   document.getElementById("join-waiting-text").textContent = "Esperando que tu amigo acepte…";
@@ -199,6 +277,12 @@ async function startJoining() {
   signaling.on("accepted", beginGuestWebRTC);
 
   signaling.on("peer-left", () => resetState());
+
+  signaling.onUnexpectedClose(() => {
+    if (sessionEnded) return;
+    showToast("Se perdió la conexión con el servidor.");
+    resetState();
+  });
 }
 
 async function beginGuestWebRTC() {
@@ -222,15 +306,24 @@ async function beginGuestWebRTC() {
       dataChannel = channel;
     },
     onConnectionStateChange: (state) => {
-      if (state === "failed" || state === "disconnected") resetState();
+      if (sessionEnded) return;
+      if (CONNECTION_STATE_MESSAGES[state]) {
+        showToast(CONNECTION_STATE_MESSAGES[state]);
+        resetState();
+      }
     },
   });
 
   signaling.on("offer", async (msg) => {
-    await pc.setRemoteDescription({ type: "offer", sdp: msg.sdp });
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    signaling.send({ type: "answer", sdp: answer.sdp });
+    try {
+      await pc.setRemoteDescription({ type: "offer", sdp: msg.sdp });
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      signaling.send({ type: "answer", sdp: answer.sdp });
+    } catch {
+      showToast("No se pudo completar la conexión con tu amigo.");
+      resetState();
+    }
   });
   signaling.on("ice-candidate", (msg) => {
     pc.addIceCandidate(msg.candidate).catch(() => {});
@@ -263,3 +356,9 @@ function showConsentModal(name, { onAccept, onDecline }) {
   acceptBtn.addEventListener("click", onAcceptClick);
   declineBtn.addEventListener("click", onDeclineClick);
 }
+
+// Si algo revienta en un handler async que no estamos cubriendo explícitamente, que se
+// vea en consola en vez de dejar la app en un estado colgado sin ninguna pista.
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("Promesa sin manejar:", e.reason);
+});

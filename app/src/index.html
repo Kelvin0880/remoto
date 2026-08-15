@@ -7,29 +7,46 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+
     <div id="app">
       <header>
+        <img class="brand-logo" src="assets/logo.png" alt="" />
         <h1>Remoto</h1>
       </header>
 
       <section id="view-home" class="view active">
-        <p class="lead">Conectate con un amigo a distancia, con su permiso explícito.</p>
+        <img class="hero-logo" src="assets/logo.png" alt="Remoto" />
+        <p class="lead">Conectate con un amigo a distancia y compartí o controlá pantallas, con permiso explícito en cada sesión.</p>
         <div class="actions">
-          <button id="btn-host" class="primary">Compartir mi pantalla</button>
-          <button id="btn-join" class="secondary">Conectarme a un amigo</button>
+          <button id="btn-host" class="primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Compartir mi pantalla
+          </button>
+          <button id="btn-join" class="secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Conectarme a un amigo
+          </button>
         </div>
       </section>
 
       <section id="view-host-waiting" class="view">
+        <div class="pulse-ring"><span class="dot"></span></div>
         <p>Compartile este código a tu amigo:</p>
-        <div class="code" id="host-code">------</div>
+        <div class="code-row">
+          <div class="code" id="host-code">------</div>
+          <button id="btn-copy-code" class="icon-btn" title="Copiar código">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
         <p class="muted">Expira en 10 minutos si nadie se conecta.</p>
         <button id="btn-host-cancel" class="ghost">Cancelar</button>
       </section>
 
       <section id="view-host-connected" class="view">
         <div class="status-bar">
-          <span class="dot"></span>
+          <span class="dot live"></span>
           <span id="host-connected-text">Compartiendo tu pantalla</span>
         </div>
         <p class="muted">Tu amigo puede ver y controlar esta PC. Podés cortar cuando quieras.</p>
@@ -38,9 +55,9 @@
 
       <section id="view-join-form" class="view">
         <label for="join-name">Tu nombre</label>
-        <input id="join-name" placeholder="Ej: Kelvin" maxlength="40" />
+        <input id="join-name" placeholder="Ej: Kelvin" maxlength="40" autocomplete="off" />
         <label for="join-code">Código de sesión</label>
-        <input id="join-code" placeholder="ABC123" maxlength="6" autocapitalize="characters" />
+        <input id="join-code" placeholder="ABC123" maxlength="6" autocapitalize="characters" autocomplete="off" />
         <div class="actions">
           <button id="btn-join-submit" class="primary">Conectar</button>
           <button id="btn-join-cancel" class="ghost">Volver</button>
@@ -49,6 +66,7 @@
       </section>
 
       <section id="view-join-waiting" class="view">
+        <div class="pulse-ring"><span class="dot"></span></div>
         <p id="join-waiting-text">Esperando que tu amigo acepte…</p>
         <button id="btn-join-cancel-2" class="ghost">Cancelar</button>
       </section>
@@ -56,14 +74,21 @@
       <section id="view-join-connected" class="view fullscreen">
         <video id="remote-video" autoplay playsinline></video>
         <div class="floating-bar">
+          <span class="dot live"></span>
           <span id="join-connected-text">Conectado</span>
-          <button id="btn-join-stop" class="danger">Desconectar</button>
+          <button id="btn-join-stop" class="danger small">Desconectar</button>
         </div>
       </section>
+
+      <footer>
+        <img src="assets/logo.png" alt="" />
+        <span>Remoto · Creador: Kelvin Gomez</span>
+      </footer>
     </div>
 
     <div id="consent-modal" class="modal hidden">
       <div class="modal-box">
+        <svg class="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3Z"/><path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <h2 id="consent-text">Alguien quiere conectarse</h2>
         <p class="muted">Va a poder ver y controlar tu pantalla hasta que cortes la sesión.</p>
         <div class="actions">
@@ -73,7 +98,8 @@
       </div>
     </div>
 
-    <footer>Creador: Kelvin Gomez</footer>
+    <div id="toast-container"></div>
+
     <script type="module" src="main.js"></script>
   </body>
 </html>

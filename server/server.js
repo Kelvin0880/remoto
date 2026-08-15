@@ -36,11 +36,37 @@ wss.on('connection', (ws) => {
       rooms.safeSend(ws, { type: 'error', reason: 'bad-json' });
       return;
     }
-    handleMessage(ws, msg, rooms);
+    if (!msg || typeof msg.type !== 'string') {
+      rooms.safeSend(ws, { type: 'error', reason: 'bad-message' });
+      return;
+    }
+    // Un mensaje con forma inesperada de un cliente no debe poder tirar abajo el
+    // servicio para todos los demás.
+    try {
+      handleMessage(ws, msg, rooms);
+    } catch (err) {
+      console.error('Error manejando mensaje:', err);
+      rooms.safeSend(ws, { type: 'error', reason: 'internal-error' });
+    }
   });
 
-  ws.on('close', () => handleClose(ws, rooms));
+  ws.on('error', (err) => {
+    console.error('Error de socket:', err.message);
+  });
+
+  ws.on('close', () => {
+    try {
+      handleClose(ws, rooms);
+    } catch (err) {
+      console.error('Error en cleanup de cierre:', err);
+    }
+  });
 });
+
+// Evita que un error no capturado en cualquier parte tumbe todo el proceso — se loguea
+// y el servicio sigue en pie para las demás sesiones activas.
+process.on('uncaughtException', (err) => console.error('uncaughtException:', err));
+process.on('unhandledRejection', (err) => console.error('unhandledRejection:', err));
 
 // Keepalive: descarta sockets muertos y evita que proxies intermedios corten la conexión
 // por inactividad.
