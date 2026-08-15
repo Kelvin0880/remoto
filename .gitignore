@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+target/
+app/src-tauri/target/
+*.log
+.env
+.DS_Store
+Thumbs.db
