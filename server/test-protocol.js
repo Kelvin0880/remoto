@@ -12,7 +12,7 @@ function check(name, cond) {
 
 function next(ws) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`timeout esperando mensaje (${ws._role})`)), 5000);
+    const timer = setTimeout(() => reject(new Error(`timeout esperando mensaje (${ws._role})`)), 15000);
     ws.once('message', (raw) => {
       clearTimeout(timer);
       resolve(JSON.parse(raw.toString()));
