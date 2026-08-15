@@ -7,25 +7,72 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main id="app">
-      <h1>Remoto <span class="badge">diagnóstico inicial</span></h1>
-      <p class="muted">
-        Pantalla temporal para validar las dos piezas más riesgosas antes de construir la
-        interfaz real: captura de pantalla vía WebRTC y control de mouse vía Rust.
-      </p>
+    <div id="app">
+      <header>
+        <h1>Remoto</h1>
+      </header>
 
-      <section class="card">
-        <h2>1. Captura de pantalla (WebRTC)</h2>
-        <button id="btn-capture">Probar getDisplayMedia()</button>
-        <video id="preview" autoplay muted playsinline></video>
+      <section id="view-home" class="view active">
+        <p class="lead">Conectate con un amigo a distancia, con su permiso explícito.</p>
+        <div class="actions">
+          <button id="btn-host" class="primary">Compartir mi pantalla</button>
+          <button id="btn-join" class="secondary">Conectarme a un amigo</button>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>2. Control de mouse (Rust / enigo)</h2>
-        <button id="btn-mouse">Mover el mouse a (200, 200)</button>
-        <p id="mouse-result" class="muted"></p>
+      <section id="view-host-waiting" class="view">
+        <p>Compartile este código a tu amigo:</p>
+        <div class="code" id="host-code">------</div>
+        <p class="muted">Expira en 10 minutos si nadie se conecta.</p>
+        <button id="btn-host-cancel" class="ghost">Cancelar</button>
       </section>
-    </main>
+
+      <section id="view-host-connected" class="view">
+        <div class="status-bar">
+          <span class="dot"></span>
+          <span id="host-connected-text">Compartiendo tu pantalla</span>
+        </div>
+        <p class="muted">Tu amigo puede ver y controlar esta PC. Podés cortar cuando quieras.</p>
+        <button id="btn-host-stop" class="danger">Detener sesión</button>
+      </section>
+
+      <section id="view-join-form" class="view">
+        <label for="join-name">Tu nombre</label>
+        <input id="join-name" placeholder="Ej: Kelvin" maxlength="40" />
+        <label for="join-code">Código de sesión</label>
+        <input id="join-code" placeholder="ABC123" maxlength="6" autocapitalize="characters" />
+        <div class="actions">
+          <button id="btn-join-submit" class="primary">Conectar</button>
+          <button id="btn-join-cancel" class="ghost">Volver</button>
+        </div>
+        <p id="join-error" class="error"></p>
+      </section>
+
+      <section id="view-join-waiting" class="view">
+        <p id="join-waiting-text">Esperando que tu amigo acepte…</p>
+        <button id="btn-join-cancel-2" class="ghost">Cancelar</button>
+      </section>
+
+      <section id="view-join-connected" class="view fullscreen">
+        <video id="remote-video" autoplay playsinline></video>
+        <div class="floating-bar">
+          <span id="join-connected-text">Conectado</span>
+          <button id="btn-join-stop" class="danger">Desconectar</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="consent-modal" class="modal hidden">
+      <div class="modal-box">
+        <h2 id="consent-text">Alguien quiere conectarse</h2>
+        <p class="muted">Va a poder ver y controlar tu pantalla hasta que cortes la sesión.</p>
+        <div class="actions">
+          <button id="btn-consent-accept" class="primary">Aceptar</button>
+          <button id="btn-consent-decline" class="ghost">Rechazar</button>
+        </div>
+      </div>
+    </div>
+
     <footer>Creador: Kelvin Gomez</footer>
     <script type="module" src="main.js"></script>
   </body>

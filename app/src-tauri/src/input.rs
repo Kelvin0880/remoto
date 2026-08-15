@@ -5,7 +5,7 @@
 // Limitación conocida: Windows UIPI bloquea SendInput hacia ventanas elevadas (UAC) desde un
 // proceso no elevado. Si el usuario necesita controlar una ventana "Ejecutar como
 // administrador", Remoto también debe correr elevado (fuera de alcance para v1).
-use enigo::{Axis, Button, Coordinate, Direction, Enigo, Keyboard, Mouse, Settings};
+use enigo::{Axis, Button, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings};
 use std::sync::Mutex;
 
 static ENIGO: Mutex<Option<Enigo>> = Mutex::new(None);
@@ -41,13 +41,23 @@ pub fn mouse_scroll(delta_y: i32) -> Result<(), String> {
     with_enigo(|e| e.scroll(delta_y, Axis::Vertical).map_err(|e| e.to_string()))
 }
 
+/// Teclas con nombre (no imprimibles): Enter, Backspace, Tab, flechas, etc.
+/// Para texto imprimible normal se usa `type_text`, que respeta el layout de teclado.
 #[tauri::command]
 pub fn key_press(key: String) -> Result<(), String> {
-    let ch = key.chars().next().unwrap_or(' ');
-    with_enigo(|e| {
-        e.key(enigo::Key::Unicode(ch), Direction::Click)
-            .map_err(|e| e.to_string())
-    })
+    let mapped = match key.as_str() {
+        "Enter" => Key::Return,
+        "Backspace" => Key::Backspace,
+        "Tab" => Key::Tab,
+        "Escape" => Key::Escape,
+        "Delete" => Key::Delete,
+        "ArrowUp" => Key::UpArrow,
+        "ArrowDown" => Key::DownArrow,
+        "ArrowLeft" => Key::LeftArrow,
+        "ArrowRight" => Key::RightArrow,
+        other => Key::Unicode(other.chars().next().unwrap_or(' ')),
+    };
+    with_enigo(|e| e.key(mapped, Direction::Click).map_err(|e| e.to_string()))
 }
 
 #[tauri::command]

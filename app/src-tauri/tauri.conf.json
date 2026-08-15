@@ -12,10 +12,10 @@
       {
         "label": "main",
         "title": "Remoto",
-        "width": 480,
-        "height": 760,
-        "minWidth": 400,
-        "minHeight": 600,
+        "width": 920,
+        "height": 640,
+        "minWidth": 480,
+        "minHeight": 400,
         "resizable": true,
         "center": true
       }
