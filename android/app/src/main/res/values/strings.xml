@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Remoto</string>
+    <string name="accessibility_service_description">Permite que Remoto mueva el cursor, toque y escriba en tu pantalla durante una sesión de control remoto que vos aceptaste explícitamente. Podés desactivarlo cuando quieras desde Ajustes &gt; Accesibilidad.</string>
+</resources>

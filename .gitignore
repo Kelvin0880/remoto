@@ -7,3 +7,10 @@ app/src-tauri/target/
 .env
 .DS_Store
 Thumbs.db
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+*.jks
+*.keystore

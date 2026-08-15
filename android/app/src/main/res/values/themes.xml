@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Remoto" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#7C5CFF</item>
+        <item name="colorPrimaryDark">#0A0B10</item>
+        <item name="colorAccent">#22D3EE</item>
+        <item name="android:windowBackground">#0A0B10</item>
+    </style>
+</resources>
