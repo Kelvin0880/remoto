@@ -1,0 +1,12 @@
+{
+  "name": "remoto-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Remoto - app de escritorio para control remoto entre amigos. Creador: Kelvin Gomez",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

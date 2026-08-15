@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remoto</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="app">
+      <h1>Remoto <span class="badge">diagnóstico inicial</span></h1>
+      <p class="muted">
+        Pantalla temporal para validar las dos piezas más riesgosas antes de construir la
+        interfaz real: captura de pantalla vía WebRTC y control de mouse vía Rust.
+      </p>
+
+      <section class="card">
+        <h2>1. Captura de pantalla (WebRTC)</h2>
+        <button id="btn-capture">Probar getDisplayMedia()</button>
+        <video id="preview" autoplay muted playsinline></video>
+      </section>
+
+      <section class="card">
+        <h2>2. Control de mouse (Rust / enigo)</h2>
+        <button id="btn-mouse">Mover el mouse a (200, 200)</button>
+        <p id="mouse-result" class="muted"></p>
+      </section>
+    </main>
+    <footer>Creador: Kelvin Gomez</footer>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
