@@ -1,0 +1,43 @@
+name: Publish APK/EXE assets
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "releases/*.apk"
+      - "releases/*.APK"
+      - "releases/*.exe"
+      - "releases/*.EXE"
+      - ".github/workflows/publish-binaries.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute release metadata
+        id: meta
+        run: |
+          DATE_UTC="$(date -u +'%Y.%m.%d')"
+          echo "tag=assets-${DATE_UTC}" >> "$GITHUB_OUTPUT"
+          echo "name=Assets ${DATE_UTC}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload binaries to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.name }}
+          generate_release_notes: true
+          files: |
+            releases/*.apk
+            releases/*.APK
+            releases/*.exe
+            releases/*.EXE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
