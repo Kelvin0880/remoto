@@ -67,6 +67,28 @@ npx tauri build      # genera el instalador final en src-tauri/target/release/bu
 
 Instalador final: **~1.1 MB** · ejecutable: **~3.1 MB** · ~30 MB de RAM en uso.
 
+## Publicar `.apk` y `.exe` (modo simple)
+
+Este repo quedó configurado para que solo tengas que arrastrar tus binarios a
+`/home/runner/work/remoto/remoto/releases/` y hacer push.
+
+Flujo:
+
+1. Copia tu `.apk` y/o `.exe` dentro de `releases/`.
+2. Haz commit y push.
+3. GitHub Actions ejecuta automáticamente el workflow
+   `.github/workflows/publish-binaries.yml`.
+4. Se crea/actualiza un Release automático del día y se adjuntan los archivos
+   como assets.
+
+Notas:
+
+- El Release se etiqueta como `assets-YYYY.MM.DD`.
+- Si subes más binarios el mismo día, se agregan al mismo Release.
+- Si quieres evitar crecer el historial del repo con binarios, usa GitHub
+  Releases manualmente (arrastrando los archivos en la UI del Release) o Git
+  LFS.
+
 ## Limitaciones conocidas (v1)
 
 - Solo Windows por ahora.
